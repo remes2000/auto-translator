@@ -14,10 +14,29 @@
 	],
 	"main": "./out/extension.js",
 	"contributes": {
+		"configuration": [
+			{
+				"type": "object",
+				"title": "Auto translator configuration",
+				"properties": {
+					"autoTranslatorExt.translationFilePath": {
+						"type": "string",
+						"default": "",
+						"description": "Absolute path to your file with translations"
+					}
+				}
+			}
+		],
 		"commands": [
 			{
 				"command": "extension.translate",
 				"title": "Create translation!"
+			}
+		],
+		"keybindings": [
+			{
+				"command": "extension.translate",
+				"key": "ctrl+shift+l"
 			}
 		]
 	},
