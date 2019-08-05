@@ -22,7 +22,17 @@
 					"autoTranslatorExt.translationFilePath": {
 						"type": "string",
 						"default": "",
-						"description": "Absolute path to your file with translations"
+						"description": "Absolute path to your file with translations. If you have more than one file separate them with semicolon"
+					},
+					"autoTranslatorExt.saveTranslationMethod": {
+						"type": "string",
+						"enum": [
+							"At the end of file",
+							"Save new translation and sort all of them alphabetically",
+							"Find right translation group and save it in this group"
+						],
+						"default": "Find right translation group and save it in this group",
+						"description": "Tells where in your translation file new translation key will be stored"
 					}
 				}
 			}

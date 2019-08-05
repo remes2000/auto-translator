@@ -3,74 +3,81 @@ import { InputBox } from 'vscode';
 import * as fs from 'file-system';
 import { promisify } from 'util';
 import * as alphaSort from 'alpha-sort';
+import translationMethods from '../helpers/saveMethod';
 
 const readFile = promisify(fs.readFile);
 const writeFile = promisify(fs.writeFile);
 
 export const translate = vscode.commands.registerCommand('extension.translate', async () => {
     const config = vscode.workspace.getConfiguration('autoTranslatorExt');
-    const translationFilePath = config['translationFilePath'];
-    let translations = null;
-    let fileData = null;
+    const translationFilePaths = config['translationFilePath'].split(';');
+    let fileData: any[] = [];
 
     //Check if file exists
-    if(!doesFileExists(translationFilePath)){
-        vscode.window.showErrorMessage("Provided translation file path is not correct! File does not exists!");
-        return;
-    }
-    //Parse file content to javascript object
-    try{
-        fileData = await readFile(translationFilePath, "utf-8");
-        translations = JSON.parse(fileData);
-    } catch(err) {
-        throw err;
-    }
+    translationFilePaths.forEach((translationFilePath: string) => {
+        if(!doesFileExists(translationFilePath)){
+            vscode.window.showErrorMessage("Provided translation file path is not correct! File does not exists!");
+            return;
+        }
+    })
+
+
+    fileData = await getFilesData(translationFilePaths);
 
     //Read translation key
-    const translationKey: string|undefined = await getTranslationKey(translations);
+    const translationKey: string|undefined = await getTranslationKey(fileData[0].translation);
     if(!translationKey){
         return;
     }
 
     //Check if translation key is unique
-    if(!isThisKeyUnique(translationKey, translations)){
+    if(!isThisKeyUnique(translationKey, fileData[0].translation)){
         vscode.window.showErrorMessage("Translation with this translation key already exists");
         return;
     }
 
-    //Read translation value
-    const translationValue = await askUser("Provide translation value");
-    if(!translationValue){
-        return;
+    for(let item of fileData) {
+        let translationValue = await askUser(`Provide translation value (${item.filePath})`);
+        if(translationValue === undefined){
+            return;
+        }
+        
+        if(config['saveTranslationMethod'] === translationMethods.sortAlphabetically){
+            await saveAndSort(translationKey, translationValue, item.translation, item.filePath);
+            vscode.window.showInformationMessage(`Translation correctly saved ${item.filePath}`);
+        } else if(config['saveTranslationMethod'] === translationMethods.saveAtTheEndOfFile){
+            await saveAtTheEndOfFile(translationKey, translationValue, item.fileData, item.filePath);
+            vscode.window.showInformationMessage(`Translation correctly saved ${item.filePath}`);
+        } else if(config['saveTranslationMethod'] === translationMethods.saveInRightGroup){
+            await saveAfterKey(translationKey, translationValue, item.fileData, item.filePath, getLastMostCommonProperty(translationKey, item.translation));
+            vscode.window.showInformationMessage(`Translation correctly saved ${item.filePath}`);
+        }
+    };
+
+    if(vscode.window.activeTextEditor){
+        vscode.window.activeTextEditor.insertSnippet(new vscode.SnippetString(translationKey), vscode.window.activeTextEditor.selection.active);
     }
-
-    //Save and sort
-    /*saveAndSort(translationKey, translationValue, translations, translationFilePath).then(() => {
-        vscode.window.showInformationMessage("Translation saved and sorted alphabetically");
-    });*/
-
-    saveAfterKey(translationKey, translationValue, fileData, translationFilePath, getLastMostCommonProperty(translationKey, translations)).then(() => {
-        vscode.window.showInformationMessage("Translation key saved!");
-    })
-
-    //const insertAfter = getLastMostCommonProperty(translationKey, translations);
-    //console.log(insertAfter);
-
-    /*
-    //Add new property and value to object
-    translations[translationKey] = translationValue;
-    //Sort properties aplhabetically
-    translations = sortPropertiesAlphabetically(translations);
-    //Save file
-    try{
-        await writeFile(translationFilePath, JSON.stringify(translations, null, 4));
-    } catch(err) {
-        throw err;
-    }
-    */
-
-    vscode.window.showInformationMessage("Translation correctly saved!");
 });
+
+const getFilesData = async (filePaths: any[]) => {
+    let promises: Promise<any>[] = [];
+    filePaths.forEach((filePath: string) => {
+        try{
+            promises.push(new Promise((resolve, reject) => {
+                readFile(filePath, 'utf-8').then((data: string) => {
+                    resolve({
+                        fileData: data,
+                        translation: JSON.parse(data),
+                        filePath: filePath
+                    })
+                })
+            }))
+        } catch(err) {
+            throw err;
+        }
+    });
+    return await Promise.all(promises);
+}
 
 const saveAfterKey = (key: string, value: string, translations: string, filePath: string, afterKey: string|undefined) => {
     return new Promise(async (resolve, reject) => {
@@ -82,13 +89,15 @@ const saveAfterKey = (key: string, value: string, translations: string, filePath
             lines.splice(lineNumber + 1, 0, indentation + '"' + key + '": "' + value + '"' + (isLastJsonLine(lineNumber, lines)?'':','));
         }
         else{
+            lines = addCommaToPreviousLine(lines.indexOf("}"), lines);
             lines.splice(lines.indexOf('}'), 0, indentation + '"' + key + '": "' + value + '"');
         }
-
+        
+        const fileContent = lines.reduce((pv: string, cv: string) => {
+            return pv + cv + '\n'
+        }, '');
         try{
-            await writeFile(filePath, lines.reduce((pv: string, cv: string) => {
-                return pv + cv + '\n'
-            }), '');
+            await writeFile(filePath, fileContent);
             resolve();
         } catch(err) {
             reject();
@@ -96,6 +105,26 @@ const saveAfterKey = (key: string, value: string, translations: string, filePath
         }
     });
 }
+
+const saveAtTheEndOfFile = (key: string, value: string, translations: string, filePath: string) => {
+    return new Promise(async (resolve, reject) => {
+        let lines = getLinesFromFile(translations);
+        const indentation = getIndentation(lines);
+        lines = addCommaToPreviousLine(lines.indexOf('}'), lines);
+        lines.splice(lines.indexOf('}'), 0, indentation + '"' + key + '": "' + value + '"');
+        const fileContent = lines.reduce((pv: string, cv: string) => {
+            return pv + cv + '\n'
+        }, '');
+        try{
+            await writeFile(filePath, fileContent);
+            resolve();
+        } catch(err){
+            reject();
+            throw err;
+        }
+    });
+} 
+
 const isLastJsonLine = (lineNumber: number, lines: string[]) => {
     for(let i = lineNumber + 1; i<lines.length; i++){
         if(isValidJsonLine(lines[i])){
@@ -106,7 +135,7 @@ const isLastJsonLine = (lineNumber: number, lines: string[]) => {
 }
 
 const addCommaToPreviousLine = (lineNumber: number, lines: string[]) => {
-    for(let i = lineNumber+1; i>=0; i--){
+    for(let i = lineNumber; i>=0; i--){
         if(isValidJsonLine(lines[i])){
             if(!lines[i].trim().endsWith(',')){
                 lines[i] = lines[i] + ',';
@@ -123,7 +152,7 @@ const getIndentation = (lines: string[]) => {
             return lines[i].slice(0, lines[i].indexOf('"'));
         }
     }
-    throw 'Cannot get indentation';
+    return '    ';
 }
 
 const getLineNumberOfKey = (lines: string[], key: string) =>{
