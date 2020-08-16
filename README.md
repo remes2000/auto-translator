@@ -1,65 +1,69 @@
-# auto-translator README
 
-This is the README for your extension "auto-translator". After writing up a brief description, we recommend including the following sections.
+# auto-translator
+
+Auto-translator is an vscode extension which will help You with managing json translation files in your project. With auto-translator you can add new translation key to all supported languages without changing currently opened file.
+
+  
+
+I've decided to create this extension because for me it was annoying to copy-paste every new translation key to multiple files. If You feel lack of some feature in this extension **feel free to open an issue or even contribute :)**
+
+  
 
 ## Features
 
-Describe specific features of your extension including screenshots of your extension in action. Image paths are relative to this README file.
+  
 
-For example if there is an image subfolder under your extension project workspace:
+![create translation feature](images/autotranslator.gif)
 
-\!\[feature X\]\(images/feature-x.png\)
+Creates translation in all provided translation files.
 
-> Tip: Many popular extensions utilize animations. This is an excellent way to show off your extension! We recommend short, focused animations that are easy to follow.
-
-## Requirements
-
-If you have any requirements or dependencies, add a section describing those and how to install and configure them.
+If you don't want to print Your translation key after adding one, use `create translation` instead of `create translation and print translation key` command.
+  
 
 ## Extension Settings
 
-Include if your extension adds any VS Code settings through the `contributes.configuration` extension point.
-
-For example:
+  
 
 This extension contributes the following settings:
 
-* `myExtension.enable`: enable/disable this extension
-* `myExtension.thing`: set to `blah` to do something
+  
 
-## Known Issues
+*  `autoTranslatorExt.translationFilePath`: Absolute paths to translation files, if you have more than one translation file separate paths with semicolon.
 
-Calling out known issues can help limit users opening duplicate issues against your extension.
+*  `autoTranslatorExt.endOfLineSymbol`: By default set to \n. Specifies what is your end of line symbol.
+
+  
 
 ## Release Notes
 
-Users appreciate release notes as you update your extension.
+  
 
 ### 1.0.0
 
-Initial release of ...
+  
 
-### 1.0.1
+First version of auto-translator. :)
 
-Fixed issue #.
+  
 
-### 1.1.0
+Added "create translation" and "create translation and print translation key" commands.
 
-Added features X, Y, and Z.
+  
 
 -----------------------------------------------------------------------------------------------------------
 
-## Working with Markdown
-
-**Note:** You can author your README using Visual Studio Code.  Here are some useful editor keyboard shortcuts:
-
-* Split the editor (`Cmd+\` on macOS or `Ctrl+\` on Windows and Linux)
-* Toggle preview (`Shift+CMD+V` on macOS or `Shift+Ctrl+V` on Windows and Linux)
-* Press `Ctrl+Space` (Windows, Linux) or `Cmd+Space` (macOS) to see a list of Markdown snippets
+  
 
 ### For more information
 
-* [Visual Studio Code's Markdown Support](http://code.visualstudio.com/docs/languages/markdown)
-* [Markdown Syntax Reference](https://help.github.com/articles/markdown-basics/)
+  
+
+Contact me by email or github :)
+
+  
+
+*  [My website](https://nieruchalski.pl/)
+
+  
 
 **Enjoy!**

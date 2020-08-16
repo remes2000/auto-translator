@@ -2,7 +2,7 @@
 	"name": "auto-translator",
 	"displayName": "auto translator",
 	"description": "Extension which will add translations to your json translation file. ",
-	"version": "0.0.1",
+	"version": "1.0.0",
 	"engines": {
 		"vscode": "^1.36.0"
 	},
@@ -10,7 +10,8 @@
 		"Other"
 	],
 	"activationEvents": [
-		"onCommand:extension.translate"
+		"onCommand:extension.translate",
+		"onCommand:extension.translatePrintTranslationKey"
 	],
 	"main": "./out/extension.js",
 	"contributes": {
@@ -24,15 +25,10 @@
 						"default": "",
 						"description": "Absolute path to your file with translations. If you have more than one file separate them with semicolon"
 					},
-					"autoTranslatorExt.saveTranslationMethod": {
+					"autoTranslatorExt.endOfLineSymbol": {
 						"type": "string",
-						"enum": [
-							"At the end of file",
-							"Save new translation and sort all of them alphabetically",
-							"Find right translation group and save it in this group"
-						],
-						"default": "Find right translation group and save it in this group",
-						"description": "Tells where in your translation file new translation key will be stored"
+						"default": "\n",
+						"description": "End of line symbol"
 					}
 				}
 			}
@@ -40,13 +36,21 @@
 		"commands": [
 			{
 				"command": "extension.translate",
-				"title": "Create translation!"
+				"title": "Create translation"
+			},
+			{
+				"command": "extension.translatePrintTranslationKey",
+				"title": "Create translation and print translation key"
 			}
 		],
 		"keybindings": [
 			{
 				"command": "extension.translate",
 				"key": "ctrl+shift+l"
+			},
+			{
+				"command": "extension.translatePrintTranslationKey",
+				"key": "ctrl+shift+k"
 			}
 		]
 	},

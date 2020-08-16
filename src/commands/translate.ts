@@ -1,16 +1,8 @@
 import * as vscode from 'vscode';
-import { InputBox } from 'vscode';
-import * as fs from 'file-system';
-import { promisify } from 'util';
-import * as alphaSort from 'alpha-sort';
-import translationMethods from '../helpers/saveMethod';
 import { InputUtils } from '../utils/input-utils';
 import { TranslationFile } from '../utils/translation-file';
 
-const readFile = promisify(fs.readFile);
-const writeFile = promisify(fs.writeFile);
-
-class TranslateCommand{
+export class TranslateCommand{
     config: vscode.WorkspaceConfiguration;
     inputUtils: InputUtils;
     files: TranslationFile[] = [];
@@ -27,13 +19,7 @@ class TranslateCommand{
             throw new Error('No translation files provided.');
         }
 
-        if(this.config['saveTranslationMethod'] === translationMethods.sortAlphabetically){
-            throw new Error(`${translationMethods.sortAlphabetically} is not yet implemented, switch to ${translationMethods.saveInRightGroup}`);
-        } else if(this.config['saveTranslationMethod'] === translationMethods.saveAtTheEndOfFile){
-            throw new Error(`${translationMethods.saveAtTheEndOfFile} is not yet implemented, switch to ${translationMethods.saveInRightGroup}`);
-        } else {
-            this.saveTranslation = this.saveTranslationInRightGroup;
-        }
+        this.saveTranslation = this.saveTranslationInRightGroup;
     }
 
     public async run() {
@@ -44,6 +30,7 @@ class TranslateCommand{
             await this.checkIfTranslationKeyIsUnusedInEveryFile();
             await this.generateTranslationValuesMap();
             await this.saveTranslation();
+            vscode.window.showInformationMessage('Translation has been sucessfully created!');
         } catch (e){
             vscode.window.showErrorMessage(e.message);
         }
@@ -67,7 +54,7 @@ class TranslateCommand{
             const question = `Provide translation for: ${file.getFilename()} [ ${file.getPath()} ]`;
             const value = await this.inputUtils.getTextValueFromUser(question);
             if(value === undefined){
-                this.translationValues.set(file.getPath(), "");
+                throw new Error(`Adding translation cancelled`);
             } else {
                 this.translationValues.set(file.getPath(), value as string);
             }
@@ -84,7 +71,7 @@ class TranslateCommand{
 export const translate = vscode.commands.registerCommand('extension.translate', async () => {
     try{
         const translateCommand: TranslateCommand = new TranslateCommand(vscode.workspace.getConfiguration('autoTranslatorExt'));
-        translateCommand.run();
+        await translateCommand.run();
     } catch (e){
         vscode.window.showErrorMessage(e.message);
     }

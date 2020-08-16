@@ -1,8 +1,7 @@
-import { promisify } from 'util';
 import * as lineReader from 'line-reader';
 import * as insertLine from 'insert-line';
 import * as fs from 'file-system';
-import { resolve } from 'dns';
+import * as vscode from 'vscode';
 
 export class TranslationFile{
   private filePath: string;
@@ -50,6 +49,27 @@ export class TranslationFile{
     });
   }
 
+  private isFileContainsProperties (): Promise<boolean>{
+    return new Promise((resolve: any, reject: any) => {
+      lineReader.eachLine(this.filePath, (line: string, last: boolean) => {
+        const properties = this.getPropertiesFromLine(line);
+        if(properties.length > 0){
+          resolve(true);
+        }
+
+        if(last){
+          resolve(false);
+        }
+      });
+    });
+  }
+
+  private initializeTranslationFile(key: string, value: string){
+    const output: any = {};
+    output[key] = value;
+    fs.writeFileSync(this.filePath, JSON.stringify(output, null, '\t'), );
+  }
+
   private getPropertiesFromLine(line: string): string[]{
     const jsonProperties = line.match(this.jsonPropertyRegex);
     if(jsonProperties){
@@ -60,9 +80,15 @@ export class TranslationFile{
   }
 
   public saveTranslationInRightGroup(key: string, value: string){
-    return new Promise((resolve: any, reject: any) => {
-      const keyParts = key.split('.');
+    return new Promise(async (resolve: any, reject: any) => {
+      const isFileContainsProperties = await this.isFileContainsProperties();
+      if(!isFileContainsProperties){
+        this.initializeTranslationFile(key, value);
+        resolve(true);
+        return;
+      }
 
+      const keyParts = key.split('.');
       let maxCommonParts = 0;
       let maxCommonPartsPropertyLine = '';
       let maxCommonPartsIndentationPrefix = '';
@@ -92,7 +118,7 @@ export class TranslationFile{
           }
         }
   
-        const newLine = '\n';
+        const newLine = vscode.workspace.getConfiguration('autoTranslatorExt')['endOfLineSymbol'];
         if(last){
           const attributeToInsert = this.getJsonAttribute(key, value, this.isLastSymbolComma(maxCommonPartsPropertyLine, maxCommonPartsCommaColumn));
           let lineReplacement = maxCommonPartsPropertyLine;
@@ -100,6 +126,7 @@ export class TranslationFile{
           lineReplacement += newLine;
           lineReplacement += maxCommonPartsIndentationPrefix;
           lineReplacement += attributeToInsert;
+
           insertLine(this.filePath).content(lineReplacement, {overwrite: true}).at(maxCommonPartsLineNumber).then(() => {
             resolve(true);
           });
