@@ -2,6 +2,8 @@
 	"name": "auto-translator",
 	"displayName": "auto translator",
 	"description": "Extension which will add translations to your json translation file. ",
+	"publisher": "remes2000",
+	"repository": "https://github.com/remes2000/auto-translator",
 	"version": "1.0.0",
 	"engines": {
 		"vscode": "^1.36.0"
